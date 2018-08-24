@@ -12,7 +12,7 @@ from .models import NeuralNetwork, Task
 class TaskManage(APIView):
     def get_object(self, pk):
         try:
-            task_obj = Task.objects.get(pk=pk)
+            task_obj = Task.objects.get(id=pk)
             return AsyncResult(task_obj.celery_id, app=app)
         except:
             raise Http404
@@ -46,7 +46,9 @@ class TaskStart(APIView):
             # network = NeuralNetwork.objects.get(name=name)
             new_task = Task.objects.create()
             network_task = test_task.delay(30, new_task.id)
+            print(network_task.task_id)
             new_task.celery_id = network_task.task_id
+            new_task.save()
             return Response(new_task.id)
 
     def override_config(self):

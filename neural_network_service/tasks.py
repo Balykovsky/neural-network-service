@@ -14,9 +14,9 @@ from huey.contrib.djhuey import task
 
 class TerminateConsumer(BaseConsumer):
     def callback(self, ch, method, properties, body):
+        self._shutdown()
         self.event.set()
         ch.basic_ack(delivery_tag=method.delivery_tag)
-        self._shutdown()
         try:
             threading.current_thread()._stop()
         except:
@@ -28,28 +28,6 @@ class TerminateListenThread(TerminateConsumer, threading.Thread):
         self.event = event
         super(TerminateConsumer, self).__init__(*args, **kwargs)
         threading.Thread.__init__(self)
-
-
-def base_task(name, path_list, task_id):
-    producer = BaseProducer(queue=str(task_id))
-    # network = NEURAL_NETWORKS[name]
-    # network(path_list, producer)
-    # predict code
-    # producer.publish(body='some predict result')
-
-def test_task(tm, task_id):
-    producer = BaseProducer(host='localhost',
-                            port=5672,
-                            virtual_host='nnhost',
-                            username='nn',
-                            password='nnpass',
-                            queue='queue_{}'.format(task_id),
-                            exchange='')
-    for i in range(tm):
-        time.sleep(1)
-        producer.publish(body=str(i))
-        if i == 29:
-            return i
 
 
 @task(include_task=True)
@@ -76,10 +54,15 @@ def neural_network_task(tm, task=None):
             if stop_event.is_set():
                 threading.current_thread()._stop()
             producer.publish(body=str(i))
-            # if i == 25:
+            # if i == 5:
             #     k = i/0
             time.sleep(1)
     except:
         producer.publish(body='Error')
-        listener._shutdown()
+        if listener.connection.is_open:
+            listener._shutdown()
         raise
+    else:
+        if listener.connection.is_open:
+            listener._shutdown()
+        producer.publish(body='Finished')

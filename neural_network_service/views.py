@@ -75,14 +75,13 @@ def listen_task(huey_instance, current_task):
                         try:
                             threading.current_thread()._stop()
                         except:
-                            pass
+                            return
                     task.status = data['status']
                     task.error = True
                     task.traceback = data['traceback']
                     task.save()
                 if data['status'] == 'finished':
-                    print('finished')
                     try:
                         threading.current_thread()._stop()
                     except:
-                        pass
+                        return

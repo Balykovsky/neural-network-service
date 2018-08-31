@@ -20,6 +20,7 @@ class BaseConsumer(metaclass=ABCMeta):
             try:
                 self.connection = pika.BlockingConnection(self._connection_params)
                 self._channel = self.connection.channel()
+                self._channel.queue_declare(queue=self._queue_name)
                 self._channel.basic_qos(prefetch_count=1)
                 self._init_callback()
                 break
@@ -35,6 +36,11 @@ class BaseConsumer(metaclass=ABCMeta):
 
     def _init_callback(self):
         self._channel.basic_consume(self.callback, queue=self._queue_name)
+
+    def _shutdown(self):
+        self._channel.queue_delete(queue=self._queue_name)
+        print('here')
+        self._close()
 
     @abstractmethod
     def callback(self, ch, method, properties, body):
@@ -55,4 +61,4 @@ class BaseConsumer(metaclass=ABCMeta):
                 self._consuming()
                 break
         finally:
-            self._close()
+            self._shutdown()

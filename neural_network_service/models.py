@@ -7,4 +7,11 @@ class NeuralNetwork(models.Model):
 
 
 class Task(models.Model):
-    celery_id = models.CharField(blank=True, null=True, max_length=100)
+    huey_id = models.CharField(blank=True, null=True, max_length=100)
+    status = models.CharField(default='Ready to start', max_length=100)
+    error = models.BooleanField(default=False)
+    traceback = models.TextField(blank=True, null=True)
+
+#
+# class Listener(models.Model):
+#     is_active = models.BooleanField(default=False)

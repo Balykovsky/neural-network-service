@@ -22,7 +22,7 @@ class BaseProducer:
                 self.connection = pika.BlockingConnection(self._connection_params)
                 self._channel = self.connection.channel()
                 self._channel.confirm_delivery()
-                self._channel.queue_declare(queue=self._queue_name, auto_delete=True)
+                self._channel.queue_declare(queue=self._queue_name)
                 break
             except ConnectionClosed:
                 time.sleep(self._reconnect_timeout)

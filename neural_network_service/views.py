@@ -53,7 +53,7 @@ class TaskStart(APIView):
             else:
                 new_task = Task.objects.create(path_qty=len(path_list))
             # network = NeuralNetwork.objects.get(name=name)
-            network_task = neural_network_task(tm=path_list, path_qty=new_task.path_qty)
+            network_task = neural_network_task(path_list=path_list, path_qty=new_task.path_qty)
             new_task.huey_id = network_task.task.task_id
             new_task.save()
             listen_tr = threading.Thread(target=listen_task, args=[HUEY, new_task.huey_id])

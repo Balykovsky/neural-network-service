@@ -32,7 +32,7 @@ class TerminateListenThread(TerminateConsumer, threading.Thread):
 
 
 @task(include_task=True)
-def neural_network_task(tm, path_qty, task=None):
+def neural_network_task(path_list, path_qty, task=None):
     stop_event = threading.Event()
     listener = TerminateListenThread(host='localhost',
                                      port=5672,
@@ -52,18 +52,17 @@ def neural_network_task(tm, path_qty, task=None):
                             exchange='')
     try:
         count = 0
-        start_qty = path_qty - len(tm)
-        for i in tm:
+        start_qty = path_qty - len(path_list)
+        for i in path_list:
             msg = {'result': str(i),
-                   'status': 'In progress {}%'.format((start_qty+count)*100/path_qty),
+                   'status': 'In progress {}%'.format(int((start_qty+count)*100/path_qty)),
                    'extra': {}}
             if stop_event.is_set():
                 raise NeuralNetworkStopExceptions('Neural network stopped by client')
-                # threading.current_thread()._stop()
             producer.publish(body=json.dumps(msg))
-            # if i == 5:
-            #     k = i/0
-            count +=1
+            count += 1
+            if count == 5:
+                k = count/0
             time.sleep(1)
     except NeuralNetworkStopExceptions:
         msg['result'] = None
@@ -74,7 +73,7 @@ def neural_network_task(tm, path_qty, task=None):
     except:
         msg['result'] = None
         msg['status'] = 'Error'
-        msg['extra'].update(last_num=i)
+        msg['extra'].update(last_num=count)
         producer.publish(body=json.dumps(msg))
         listener._shutdown()
         raise

@@ -1,5 +1,6 @@
 import threading
 import json
+import datetime
 from rest_framework.views import APIView
 from django.http import Http404, JsonResponse
 from rest_framework.response import Response
@@ -45,9 +46,14 @@ class TaskStart(APIView):
         if serializer.is_valid():
             name = serializer.data['name']
             path_list = serializer.data['path_list']
+            extra_data = serializer.data['extra']
+            print(extra_data)
+            if extra_data and ('rerun' in extra_data.keys()):
+                new_task = Task.objects.get(huey_id=extra_data['id'])
+            else:
+                new_task = Task.objects.create(path_qty=len(path_list))
             # network = NeuralNetwork.objects.get(name=name)
-            new_task = Task.objects.create()
-            network_task = neural_network_task(tm=10)
+            network_task = neural_network_task(tm=path_list, path_qty=new_task.path_qty)
             new_task.huey_id = network_task.task.task_id
             new_task.save()
             listen_tr = threading.Thread(target=listen_task, args=[HUEY, new_task.huey_id])
@@ -66,10 +72,13 @@ def listen_task(huey_instance, current_task):
             data = json.loads(message['data'])
             if data['id'] == current_task:
                 task = Task.objects.get(huey_id=current_task)
+                if data['status'] == 'started' and not task.started_at:
+                    task.started_at = datetime.datetime.now()
+                    task.save()
                 task.status = data['status']
                 task.save()
                 if data['status'] == 'error-task':
-                    if 'assert not lock.locked()' in data['traceback']:
+                    if 'Neural network stopped by client' in data['traceback']:
                         task.status = 'stopped'
                         task.save()
                         try:
@@ -78,9 +87,12 @@ def listen_task(huey_instance, current_task):
                             return
                     task.status = data['status']
                     task.error = True
+                    task.finished_at = datetime.datetime.now()
                     task.traceback = data['traceback']
                     task.save()
                 if data['status'] == 'finished':
+                    task.finished_at = datetime.datetime.now()
+                    task.save()
                     try:
                         threading.current_thread()._stop()
                     except:

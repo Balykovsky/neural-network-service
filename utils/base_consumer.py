@@ -38,9 +38,12 @@ class BaseConsumer(metaclass=ABCMeta):
         self._channel.basic_consume(self.callback, queue=self._queue_name)
 
     def _shutdown(self):
-        self._channel.queue_delete(queue=self._queue_name)
-        print('here')
-        self._close()
+        if self.connection.is_open:
+            try:
+                self._channel.queue_delete(queue=self._queue_name)
+                self._close()
+            except:
+                pass
 
     @abstractmethod
     def callback(self, ch, method, properties, body):

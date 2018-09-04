@@ -1,6 +1,7 @@
-import time, threading, _thread
+import time, threading, json
 from utils.base_producer import BaseProducer
 from utils.base_consumer import BaseConsumer
+from utils.exceptions import NeuralNetworkStopExceptions
 from huey.contrib.djhuey import task
 # from some import neuro1, neuro2, neuro3, neuro4
 
@@ -31,7 +32,7 @@ class TerminateListenThread(TerminateConsumer, threading.Thread):
 
 
 @task(include_task=True)
-def neural_network_task(tm, task=None):
+def neural_network_task(tm, path_qty, task=None):
     stop_event = threading.Event()
     listener = TerminateListenThread(host='localhost',
                                      port=5672,
@@ -50,19 +51,36 @@ def neural_network_task(tm, task=None):
                             queue=task.task_id,
                             exchange='')
     try:
-        for i in range(tm):
+        count = 0
+        start_qty = path_qty - len(tm)
+        for i in tm:
+            msg = {'result': str(i),
+                   'status': 'In progress {}%'.format((start_qty+count)*100/path_qty),
+                   'extra': {}}
             if stop_event.is_set():
-                threading.current_thread()._stop()
-            producer.publish(body=str(i))
+                raise NeuralNetworkStopExceptions('Neural network stopped by client')
+                # threading.current_thread()._stop()
+            producer.publish(body=json.dumps(msg))
             # if i == 5:
             #     k = i/0
+            count +=1
             time.sleep(1)
+    except NeuralNetworkStopExceptions:
+        msg['result'] = None
+        msg['status'] = 'Stopped'
+        msg['extra'].update(last_num=count)
+        producer.publish(body=json.dumps(msg))
+        raise
     except:
-        producer.publish(body='Error')
-        if listener.connection.is_open:
-            listener._shutdown()
+        msg['result'] = None
+        msg['status'] = 'Error'
+        msg['extra'].update(last_num=i)
+        producer.publish(body=json.dumps(msg))
+        listener._shutdown()
         raise
     else:
-        if listener.connection.is_open:
-            listener._shutdown()
-        producer.publish(body='Finished')
+        msg['result'] = None
+        msg['status'] = 'Finished'
+        msg['extra'] = {}
+        listener._shutdown()
+        producer.publish(body=json.dumps(msg))

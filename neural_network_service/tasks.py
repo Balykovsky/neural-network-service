@@ -1,4 +1,6 @@
-import time, threading, json
+import time
+import threading
+import json
 from utils.base_producer import BaseProducer
 from utils.base_consumer import BaseConsumer
 from utils.exceptions import NeuralNetworkStopExceptions
@@ -17,9 +19,8 @@ class TerminateConsumer(BaseConsumer):
     def callback(self, ch, method, properties, body):
         self._shutdown()
         self.event.set()
-        ch.basic_ack(delivery_tag=method.delivery_tag)
         try:
-            threading.current_thread()._stop()
+            ch.basic_ack(delivery_tag=method.delivery_tag)
         except:
             pass
 
@@ -61,8 +62,8 @@ def neural_network_task(path_list, path_qty, task=None):
                 raise NeuralNetworkStopExceptions('Neural network stopped by client')
             producer.publish(body=json.dumps(msg))
             count += 1
-            if count == 5:
-                k = count/0
+            # if count == 5:
+            #     k = count/0
             time.sleep(1)
     except NeuralNetworkStopExceptions:
         msg['result'] = None

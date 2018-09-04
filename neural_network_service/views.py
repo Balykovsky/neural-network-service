@@ -47,7 +47,6 @@ class TaskStart(APIView):
             name = serializer.data['name']
             path_list = serializer.data['path_list']
             extra_data = serializer.data['extra']
-            print(extra_data)
             if extra_data and ('rerun' in extra_data.keys()):
                 new_task = Task.objects.get(huey_id=extra_data['id'])
             else:
@@ -72,28 +71,28 @@ def listen_task(huey_instance, current_task):
             data = json.loads(message['data'])
             if data['id'] == current_task:
                 task = Task.objects.get(huey_id=current_task)
+                task.status = data['status']
+                task.save()
                 if data['status'] == 'started' and not task.started_at:
                     task.started_at = datetime.datetime.now()
                     task.save()
-                task.status = data['status']
-                task.save()
-                if data['status'] == 'error-task':
+                elif data['status'] == 'error-task':
                     if 'Neural network stopped by client' in data['traceback']:
                         task.status = 'stopped'
                         task.save()
-                        try:
-                            threading.current_thread()._stop()
-                        except:
-                            return
+                        # try:
+                        #     threading.current_thread()._stop()
+                        # except:
+                        return
                     task.status = data['status']
                     task.error = True
                     task.finished_at = datetime.datetime.now()
                     task.traceback = data['traceback']
                     task.save()
-                if data['status'] == 'finished':
+                elif data['status'] == 'finished':
                     task.finished_at = datetime.datetime.now()
                     task.save()
-                    try:
-                        threading.current_thread()._stop()
-                    except:
-                        return
+                    # try:
+                    #     threading.current_thread()._stop()
+                    # except:
+                    return

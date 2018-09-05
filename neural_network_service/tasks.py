@@ -17,12 +17,13 @@ from huey.contrib.djhuey import task
 
 class TerminateConsumer(BaseConsumer):
     def callback(self, ch, method, properties, body):
-        self._shutdown()
         self.event.set()
+        self._shutdown()
         try:
             ch.basic_ack(delivery_tag=method.delivery_tag)
         except:
             pass
+
 
 
 class TerminateListenThread(TerminateConsumer, threading.Thread):
@@ -61,9 +62,9 @@ def neural_network_task(path_list, path_qty, task=None):
             if stop_event.is_set():
                 raise NeuralNetworkStopExceptions('Neural network stopped by client')
             producer.publish(body=json.dumps(msg))
-            count += 1
             # if count == 5:
             #     k = count/0
+            count += 1
             time.sleep(1)
     except NeuralNetworkStopExceptions:
         msg['result'] = None

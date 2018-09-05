@@ -89,6 +89,7 @@ def listen_task(huey_instance, current_task):
                     task.finished_at = datetime.datetime.now()
                     task.traceback = data['traceback']
                     task.save()
+                    return
                 elif data['status'] == 'finished':
                     task.finished_at = datetime.datetime.now()
                     task.save()

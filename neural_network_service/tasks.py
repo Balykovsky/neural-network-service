@@ -25,7 +25,6 @@ class TerminateConsumer(BaseConsumer):
             pass
 
 
-
 class TerminateListenThread(TerminateConsumer, threading.Thread):
     def __init__(self, event, *args, **kwargs):
         self.event = event

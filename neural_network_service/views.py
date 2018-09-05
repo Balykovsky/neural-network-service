@@ -75,25 +75,16 @@ def listen_task(huey_instance, current_task):
                 task.save()
                 if data['status'] == 'started' and not task.started_at:
                     task.started_at = datetime.datetime.now()
-                    task.save()
                 elif data['status'] == 'error-task':
                     if 'Neural network stopped by client' in data['traceback']:
                         task.status = 'stopped'
                         task.save()
-                        # try:
-                        #     threading.current_thread()._stop()
-                        # except:
                         return
-                    task.status = data['status']
                     task.error = True
                     task.finished_at = datetime.datetime.now()
                     task.traceback = data['traceback']
-                    task.save()
-                    return
                 elif data['status'] == 'finished':
                     task.finished_at = datetime.datetime.now()
-                    task.save()
-                    # try:
-                    #     threading.current_thread()._stop()
-                    # except:
+                task.save()
+                if task.status in ['error-task', 'finished', 'stopped']:
                     return

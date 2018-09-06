@@ -7,3 +7,8 @@ class NeuralInputSerializer(serializers.Serializer):
         child=serializers.CharField())
     extra = serializers.DictField(
         child=serializers.CharField())
+
+    def validate_path_list(self, value):
+        if not value:
+            raise serializers.ValidationError('Path list is empty')
+        return value

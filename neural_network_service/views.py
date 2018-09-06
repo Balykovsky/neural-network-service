@@ -1,6 +1,7 @@
 import threading
 import json
 import datetime
+from rest_framework import status
 from rest_framework.views import APIView
 from django.http import Http404, JsonResponse
 from rest_framework.response import Response
@@ -34,9 +35,9 @@ class TaskManage(APIView):
                                     queue=task.huey_id + '_stop',
                                     exchange='')
             producer.publish(body='stop')
-            return Response('Success')
+            return Response('Neural network task successfully suspended')
         except:
-            return Response('Error')
+            return Response('Suspend is not available now', status=status.HTTP_404_NOT_FOUND)
 
 
 class TaskStart(APIView):
@@ -58,6 +59,7 @@ class TaskStart(APIView):
             listen_tr = threading.Thread(target=listen_task, args=[HUEY, new_task.huey_id])
             listen_tr.start()
             return JsonResponse({'task_id': new_task.huey_id})
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     def override_config(self):
         pass

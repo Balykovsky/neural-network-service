@@ -61,7 +61,7 @@ def neural_network_task(path_list, path_qty, task=None):
             if stop_event.is_set():
                 raise NeuralNetworkStopExceptions('Neural network stopped by client')
             producer.publish(body=json.dumps(msg))
-            # if count == 5:
+            # if count == 15:
             #     k = count/0
             count += 1
             time.sleep(1)

@@ -3,6 +3,7 @@ import json
 import datetime
 from rest_framework import status
 from rest_framework.views import APIView
+from django.utils import timezone
 from django.http import Http404, JsonResponse
 from rest_framework.response import Response
 from .tasks import neural_network_task
@@ -27,7 +28,7 @@ class TaskManage(APIView):
     def post(self, request, taskid):
         task = self.get_object(taskid)
         try:
-            producer = BaseProducer(host='localhost',
+            producer = BaseProducer(host='rabbit',
                                     port=5672,
                                     virtual_host='nnhost',
                                     username='nn',
@@ -76,7 +77,7 @@ def listen_task(huey_instance, current_task):
                 task.status = data['status']
                 task.save()
                 if data['status'] == 'started' and not task.started_at:
-                    task.started_at = datetime.datetime.now()
+                    task.started_at = timezone.now()
                 elif data['status'] == 'error-task':
                     if 'Neural network stopped by client' in data['traceback']:
                         task.status = 'stopped'
@@ -86,7 +87,7 @@ def listen_task(huey_instance, current_task):
                     task.finished_at = datetime.datetime.now()
                     task.traceback = data['traceback']
                 elif data['status'] == 'finished':
-                    task.finished_at = datetime.datetime.now()
+                    task.finished_at = timezone.now()
                 task.save()
                 if task.status in ['error-task', 'finished', 'stopped']:
                     return

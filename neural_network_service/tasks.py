@@ -35,7 +35,7 @@ class TerminateListenThread(TerminateConsumer, threading.Thread):
 @task(include_task=True)
 def neural_network_task(path_list, path_qty, task=None):
     stop_event = threading.Event()
-    listener = TerminateListenThread(host='localhost',
+    listener = TerminateListenThread(host='rabbit',
                                      port=5672,
                                      virtual_host='nnhost',
                                      username='nn',
@@ -44,7 +44,7 @@ def neural_network_task(path_list, path_qty, task=None):
                                      consuming_timeout=None,
                                      event=stop_event)
     listener.start()
-    producer = BaseProducer(host='localhost',
+    producer = BaseProducer(host='rabbit',
                             port=5672,
                             virtual_host='nnhost',
                             username='nn',
@@ -61,8 +61,9 @@ def neural_network_task(path_list, path_qty, task=None):
             if stop_event.is_set():
                 raise NeuralNetworkStopExceptions('Neural network stopped by client')
             producer.publish(body=json.dumps(msg))
-            # if count == 15:
-            #     k = count/0
+
+            if count == 15:
+                k = count/0
             count += 1
             time.sleep(1)
     except NeuralNetworkStopExceptions:

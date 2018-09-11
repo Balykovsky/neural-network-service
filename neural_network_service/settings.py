@@ -138,7 +138,7 @@ HUEY = {
     'blocking': False,  # Poll the queue rather than do blocking pop.
     'backend_class': 'huey.RedisHuey',  # Use path to redis huey by default,
     'connection': {
-        'host': 'localhost',
+        'host': 'redis',
         'port': 6379,
         'db': 0,
         'connection_pool': None,  # Definitely you should use pooling!

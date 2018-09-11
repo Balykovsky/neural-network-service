@@ -1,0 +1,66 @@
+version: '3.7'
+
+services:
+
+  db:
+    image: postgres:10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    hostname: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "9432:9432"
+
+  redis:
+    image: redis:2.8.19
+    hostname: redis
+    ports:
+      - "6379:6379"
+
+  rabbit:
+    hostname: rabbit
+    image: rabbitmq:3.6.0
+    environment:
+      - RABBITMQ_DEFAULT_USER=nn
+      - RABBITMQ_DEFAULT_PASS=nnpass
+      - RABBITMQ_DEFAULT_VHOST=nnhost
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  web:
+    build: .
+    hostname: web
+    command: bash -c "python /code/manage.py migrate && python /code/manage.py runserver 0.0.0.0:8585"
+    volumes:
+      - .:/code
+    ports:
+      - "8585:8585"
+
+    links:
+      - db
+      - rabbit
+      - redis
+    depends_on:
+      - db
+
+  huey:
+    build: .
+    hostname: huey
+    command: python /code/manage.py run_huey
+    volumes:
+      - .:/code
+
+    links:
+      - db
+      - rabbit
+      - redis
+      - web
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:

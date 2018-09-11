@@ -88,6 +88,8 @@ def listen_task(huey_instance, current_task):
                     task.traceback = data['traceback']
                 elif data['status'] == 'finished':
                     task.finished_at = timezone.now()
+                elif data['status'] == 'in progress':
+                    task.progress = data['progress']
                 task.save()
                 if task.status in ['error-task', 'finished', 'stopped']:
                     return

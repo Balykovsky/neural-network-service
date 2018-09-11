@@ -4,7 +4,7 @@ import json
 from utils.base_producer import BaseProducer
 from utils.base_consumer import BaseConsumer
 from utils.exceptions import NeuralNetworkStopExceptions
-from huey.contrib.djhuey import task
+from huey.contrib.djhuey import task, HUEY
 # from some import neuro1, neuro2, neuro3, neuro4
 
 
@@ -55,15 +55,17 @@ def neural_network_task(path_list, path_qty, task=None):
         count = 0
         start_qty = path_qty - len(path_list)
         for i in path_list:
+            progress = int((start_qty+count)*100/path_qty)
             msg = {'result': str(i),
-                   'status': 'In progress {}%'.format(int((start_qty+count)*100/path_qty)),
+                   'status': 'In progress {}%'.format(progress),
                    'extra': {}}
             if stop_event.is_set():
                 raise NeuralNetworkStopExceptions('Neural network stopped by client')
             producer.publish(body=json.dumps(msg))
-
-            if count == 15:
-                k = count/0
+            if progress % 5 == 0:
+                HUEY.emit_task(status='in progress', task=task, progress=progress)
+            # if count == 15:
+            #     k = count/0
             count += 1
             time.sleep(1)
     except NeuralNetworkStopExceptions:

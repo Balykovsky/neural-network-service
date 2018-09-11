@@ -17,6 +17,7 @@ class Task(models.Model):
     path_qty = models.IntegerField(default=0)
     started_at = models.DateTimeField(null=True)
     finished_at = models.DateTimeField(null=True)
+    progress = models.IntegerField(null=True, default=0)
 
     def __str__(self):
         return self.huey_id

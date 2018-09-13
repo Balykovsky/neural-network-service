@@ -23,6 +23,9 @@ class TaskManage(APIView):
 
     def get(self, request, taskid):
         task = self.get_object(taskid)
+        if task.status == 'in progress':
+            return Response({'status': task.status,
+                             'progress': task.progress})
         return Response(task.status)
 
     def post(self, request, taskid):
@@ -88,6 +91,7 @@ def listen_task(huey_instance, current_task):
                     task.traceback = data['traceback']
                 elif data['status'] == 'finished':
                     task.finished_at = timezone.now()
+                    task.progress = 100
                 elif data['status'] == 'in progress':
                     task.progress = data['progress']
                 task.save()

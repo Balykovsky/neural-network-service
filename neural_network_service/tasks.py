@@ -1,19 +1,13 @@
-import time
 import threading
 import json
+import os
+from functools import partial
+from neural_network_service.settings import BASE_DIR
 from utils.base_producer import BaseProducer
 from utils.base_consumer import BaseConsumer
 from utils.exceptions import NeuralNetworkStopExceptions
 from huey.contrib.djhuey import task, HUEY
-# from some import neuro1, neuro2, neuro3, neuro4
 
-
-# NEURAL_NETWORKS = {
-#     'neuro1': neuro1,
-#     'neuro2': neuro2,
-#     'neuro3': neuro3,
-#     'neuro4': neuro4
-# }
 
 class TerminateConsumer(BaseConsumer):
     def callback(self, ch, method, properties, body):
@@ -32,52 +26,81 @@ class TerminateListenThread(TerminateConsumer, threading.Thread):
         threading.Thread.__init__(self)
 
 
+class NeuralNetworkResultProcessing:
+    def __init__(self):
+        self._count = 0
+
+    def callback(self, target, producer, stop_event, path_qty, path_list, task):
+        if stop_event.is_set():
+            raise NeuralNetworkStopExceptions('Neural network stopped by client')
+        start_qty = path_qty - len(path_list)
+        progress = int((start_qty + self._count) * 100 / path_qty)
+        result = {'path': path_list[self._count], 'target': target[1].tolist()}
+        msg = {'result': result,
+               'status': 'In progress {}%'.format(progress),
+               'extra': {}}
+        producer.publish(body=json.dumps(msg))
+        self._store_result(result, task)
+        if progress % 5 == 0:
+            HUEY.emit_task(status='in progress', task=task, progress=progress)
+        self._count += 1
+
+    def _store_result(self, result, task):
+        head, tail = os.path.split(result['path'])
+        file_name = 'predict_{}.json'.format(tail.split('.')[0])
+        task_path = os.path.join(BASE_DIR, 'results', task.task_id)
+        if not os.path.exists(task_path):
+            os.makedirs(task_path)
+        path = os.path.join(task_path, file_name)
+        with open(path, 'w') as outfile:
+            json.dump(result, outfile)
+
+    def join_results(self):
+        # join results in single json
+        pass
+
 @task(include_task=True)
 def neural_network_task(path_list, path_qty, task=None):
     stop_event = threading.Event()
-    listener = TerminateListenThread(host='rabbit',
-                                     port=5672,
-                                     virtual_host='nnhost',
-                                     username='nn',
-                                     password='nnpass',
+    listener = TerminateListenThread(host=os.getenv('RABBITMQ_HOST'),
+                                     port=os.getenv('RABBITMQ_PORT'),
+                                     virtual_host=os.getenv('RABBITMQ_DEFAULT_VHOST'),
+                                     username=os.getenv('RABBITMQ_DEFAULT_USER'),
+                                     password=os.getenv('RABBITMQ_DEFAULT_PASS'),
                                      queue=task.task_id + '_stop',
                                      consuming_timeout=None,
                                      event=stop_event)
     listener.start()
-    producer = BaseProducer(host='rabbit',
-                            port=5672,
-                            virtual_host='nnhost',
-                            username='nn',
-                            password='nnpass',
+    producer = BaseProducer(host=os.getenv('RABBITMQ_HOST'),
+                            port=os.getenv('RABBITMQ_PORT'),
+                            virtual_host=os.getenv('RABBITMQ_DEFAULT_VHOST'),
+                            username=os.getenv('RABBITMQ_DEFAULT_USER'),
+                            password=os.getenv('RABBITMQ_DEFAULT_PASS'),
                             queue=task.task_id,
                             exchange='')
     try:
-        count = 0
-        start_qty = path_qty - len(path_list)
-        for i in path_list:
-            progress = int((start_qty+count)*100/path_qty)
-            msg = {'result': str(i),
-                   'status': 'In progress {}%'.format(progress),
-                   'extra': {}}
-            if stop_event.is_set():
-                raise NeuralNetworkStopExceptions('Neural network stopped by client')
-            producer.publish(body=json.dumps(msg))
-            if progress % 5 == 0:
-                HUEY.emit_task(status='in progress', task=task, progress=progress)
-            # if count == 15:
-            #     k = count/0
-            count += 1
-            time.sleep(1)
+        msg = {'result': None,
+               'status': None,
+               'extra': {}}
+        predictor = Predictor()
+        res_process = NeuralNetworkResultProcessing()
+        modify_callback = partial(res_process.callback,
+                                  producer=producer,
+                                  stop_event=stop_event,
+                                  path_qty=path_qty,
+                                  path_list=path_list,
+                                  task=task)
+        predictor.predict(modify_callback)
     except NeuralNetworkStopExceptions:
         msg['result'] = None
         msg['status'] = 'Stopped'
-        msg['extra'].update(last_num=count)
+        msg['extra'].update(last_num=res_process._count)
         producer.publish(body=json.dumps(msg))
         raise
     except:
         msg['result'] = None
         msg['status'] = 'Error'
-        msg['extra'].update(last_num=count)
+        msg['extra'].update(last_num=res_process._count)
         producer.publish(body=json.dumps(msg))
         listener._shutdown()
         raise
@@ -85,5 +108,6 @@ def neural_network_task(path_list, path_qty, task=None):
         msg['result'] = None
         msg['status'] = 'Finished'
         msg['extra'] = {}
+        # res_process.join_results()
         listener._shutdown()
         producer.publish(body=json.dumps(msg))

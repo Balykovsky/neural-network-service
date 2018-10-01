@@ -7,6 +7,7 @@ from utils.base_producer import BaseProducer
 from utils.base_consumer import BaseConsumer
 from utils.exceptions import NeuralNetworkStopExceptions
 from huey.contrib.djhuey import task, HUEY
+from neural_network_service.test_predictor import TestPredictor
 
 
 class TerminateConsumer(BaseConsumer):
@@ -35,7 +36,7 @@ class NeuralNetworkResultProcessing:
             raise NeuralNetworkStopExceptions('Neural network stopped by client')
         start_qty = path_qty - len(path_list)
         progress = int((start_qty + self._count) * 100 / path_qty)
-        result = {'path': path_list[self._count], 'target': target[1].tolist()}
+        result = {'path': path_list[self._count], 'target': target}
         msg = {'result': result,
                'status': 'In progress {}%'.format(progress),
                'extra': {}}
@@ -82,7 +83,7 @@ def neural_network_task(path_list, path_qty, task=None):
         msg = {'result': None,
                'status': None,
                'extra': {}}
-        predictor = Predictor()
+        predictor = TestPredictor(path_list=path_list)
         res_process = NeuralNetworkResultProcessing()
         modify_callback = partial(res_process.callback,
                                   producer=producer,

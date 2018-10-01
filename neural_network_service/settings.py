@@ -138,8 +138,8 @@ HUEY = {
     'blocking': False,  # Poll the queue rather than do blocking pop.
     'backend_class': 'huey.RedisHuey',  # Use path to redis huey by default,
     'connection': {
-        'host': os.getenv('REDIS_HOST'),
-        'port': os.getenv('REDIS_PORT'),
+        'host': 'localhost',
+        'port': '6379',
         'db': 0,
         'connection_pool': None,  # Definitely you should use pooling!
         # ... tons of other options, see redis-py for details.
@@ -156,8 +156,8 @@ HUEY = {
         'backoff': 1.15,  # Exponential backoff using this rate, -b.
         'max_delay': 10.0,  # Max possible polling interval, -m.
         'utc': True,  # Treat ETAs and schedules as UTC datetimes.
-        'scheduler_interval': 1,  # Check schedule every second, -s.
-        'periodic': False,  # Enable crontab feature.
+        'scheduler_interval': 30,  # Check schedule every second, -s.
+        'periodic': True,  # Enable crontab feature.
         'check_worker_health': True,  # Enable worker health checks.
         'health_check_interval': 1,  # Check worker health every second.
     },

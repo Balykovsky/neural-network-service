@@ -2,12 +2,17 @@ import threading
 import json
 import os
 from functools import partial
+from datetime import timedelta
+from django.utils import timezone
 from neural_network_service.settings import BASE_DIR
 from utils.base_producer import BaseProducer
 from utils.base_consumer import BaseConsumer
 from utils.exceptions import NeuralNetworkStopExceptions
-from huey.contrib.djhuey import task, HUEY
+from huey import crontab
+from huey.contrib.djhuey import task, periodic_task, HUEY
 from neural_network_service.test_predictor import TestPredictor
+from neural_network_service.models import Task
+from utils.assets import delete_task_data
 
 
 class TerminateConsumer(BaseConsumer):
@@ -112,3 +117,12 @@ def neural_network_task(path_list, path_qty, task=None):
         # res_process.join_results()
         listener._shutdown()
         producer.publish(body=json.dumps(msg))
+
+
+@periodic_task(crontab(day='*'))
+def delete_expired_results():
+    expired_tasks = Task.objects.filter(
+        finished_at__lte=timezone.now()-timedelta(days=os.getenv('DAYS_EXPIRED'))
+    )
+    for task in expired_tasks:
+        delete_task_data(task)

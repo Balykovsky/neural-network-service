@@ -8,6 +8,7 @@ from neural_network_service.settings import BASE_DIR
 from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
 from neural_network_service.tasks import neural_network_task
 from neural_network_service.serializers import NeuralInputSerializer
@@ -26,6 +27,8 @@ class TaskManage(APIView):
     def post(self, request, taskid):
         task = get_object_or_404(Task, huey_id=taskid)
         try:
+            if task.status in ['finished', 'stopped']:
+                raise Exception
             producer = BaseProducer(host=os.getenv('RABBITMQ_HOST'),
                                     port=os.getenv('RABBITMQ_PORT'),
                                     virtual_host=os.getenv('RABBITMQ_DEFAULT_VHOST'),
@@ -51,7 +54,7 @@ class TaskStart(APIView):
             path_list = serializer.data['path_list']
             extra_data = serializer.data['extra']
             if extra_data and ('rerun' in extra_data.keys()):
-                new_task = get_object_or_404(huey_id=extra_data['id'])
+                new_task = get_object_or_404(Task, huey_id=extra_data['id'])
                 path_to_rename = os.path.join(BASE_DIR, 'results', new_task.huey_id)
             else:
                 new_task = Task.objects.create(path_qty=len(path_list))
@@ -77,11 +80,14 @@ def listen_task(huey_instance, current_task):
     for message in listener.listen():
         print(message)
         if message['type'] == 'message':
-            data = json.loads(message['data'])
+            data = json.loads(message['data'].decode())
             if data['status'] == 'checking-periodic':
                 continue
             if data['id'] == current_task:
-                task = get_object_or_404(Task, huey_id=current_task)
+                try:
+                    task = Task.objects.get(huey_id=current_task)
+                except ObjectDoesNotExist:
+                    return
                 task.status = data['status']
                 task.save()
                 if data['status'] == 'started' and not task.started_at:
@@ -96,6 +102,7 @@ def listen_task(huey_instance, current_task):
                     task.traceback = data['traceback']
                 elif data['status'] == 'finished':
                     task.finished_at = timezone.now()
+                    task.progress = 100
                 elif data['status'] == 'in progress':
                     task.progress = data['progress']
                 task.save()

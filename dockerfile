@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM rwightman/pytorch-opencv
 
 ENV PYTHONUNBUFFERED 1
 

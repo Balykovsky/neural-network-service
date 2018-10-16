@@ -84,7 +84,7 @@ DATABASES = {
         'NAME': 'postgres',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
-        'HOST': 'localhost',
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
@@ -113,7 +113,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -138,7 +138,7 @@ HUEY = {
     'blocking': False,  # Poll the queue rather than do blocking pop.
     'backend_class': 'huey.RedisHuey',  # Use path to redis huey by default,
     'connection': {
-        'host': 'localhost',
+        'host': 'redis',
         'port': '6379',
         'db': 0,
         'connection_pool': None,  # Definitely you should use pooling!
@@ -156,7 +156,7 @@ HUEY = {
         'backoff': 1.15,  # Exponential backoff using this rate, -b.
         'max_delay': 10.0,  # Max possible polling interval, -m.
         'utc': True,  # Treat ETAs and schedules as UTC datetimes.
-        'scheduler_interval': 30,  # Check schedule every second, -s.
+        'scheduler_interval': 1,  # Check schedule every second, -s.
         'periodic': True,  # Enable crontab feature.
         'check_worker_health': True,  # Enable worker health checks.
         'health_check_interval': 1,  # Check worker health every second.

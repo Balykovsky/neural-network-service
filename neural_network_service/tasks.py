@@ -119,10 +119,8 @@ def neural_network_task(path_list, path_qty, task=None):
         producer.publish(body=json.dumps(msg))
 
 
-@periodic_task(crontab(day='*'))
+@periodic_task(crontab(minute='3', hour='14'))
 def delete_expired_results():
-    expired_tasks = Task.objects.filter(
-        finished_at__lte=timezone.now()-timedelta(days=os.getenv('DAYS_EXPIRED'))
-    )
+    expired_tasks = Task.objects.filter(finished_at__lte=timezone.now()-timedelta(days=5))
     for task in expired_tasks:
         delete_task_data(task)

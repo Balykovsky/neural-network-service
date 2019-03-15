@@ -113,7 +113,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -139,7 +139,7 @@ HUEY = {
     'backend_class': 'huey.RedisHuey',  # Use path to redis huey by default,
     'connection': {
         'host': 'redis',
-        'port': 6379,
+        'port': '6379',
         'db': 0,
         'connection_pool': None,  # Definitely you should use pooling!
         # ... tons of other options, see redis-py for details.
@@ -157,7 +157,7 @@ HUEY = {
         'max_delay': 10.0,  # Max possible polling interval, -m.
         'utc': True,  # Treat ETAs and schedules as UTC datetimes.
         'scheduler_interval': 1,  # Check schedule every second, -s.
-        'periodic': False,  # Enable crontab feature.
+        'periodic': True,  # Enable crontab feature.
         'check_worker_health': True,  # Enable worker health checks.
         'health_check_interval': 1,  # Check worker health every second.
     },

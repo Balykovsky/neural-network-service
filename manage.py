@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 import os
 import sys
+import dotenv
+from neural_network_service.settings import BASE_DIR
+
 
 if __name__ == '__main__':
+    dotenv.load_dotenv(os.path.join(BASE_DIR, '.env'))
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'neural_network_service.settings')
     try:
         from django.core.management import execute_from_command_line

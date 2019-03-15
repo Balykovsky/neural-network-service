@@ -1,6 +1,6 @@
 Django==2.1
 djangorestframework==3.8.2
-huey==1.10.2
+huey==1.10.3
 pika==0.12.0
 psycopg2==2.7.5
 redis==2.10.6
